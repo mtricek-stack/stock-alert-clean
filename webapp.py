@@ -12,7 +12,7 @@ EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")     # メールパスワード
 TO_ADDRESS = os.environ.get("TO_ADDRESS")             # 送信先メール
 
 STOCK_SYMBOL = "AAPL"      # 監視銘柄
-DROP_PERCENT = 5           # 下落率（%）
+DROP_PERCENT = 0.01        # 下落率（%）
 
 # -------------------------
 # 株価チェック
