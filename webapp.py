@@ -1,46 +1,65 @@
-import os
 import yfinance as yf
 import smtplib
 from email.mime.text import MIMEText
-from flask import Flask
+from email.mime.multipart import MIMEMultipart
+import os
 
-app = Flask(__name__)
+# -------------------------
+# 設定（環境変数で管理）
+# -------------------------
+EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS")       # 送信元メール
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")     # メールパスワード（環境変数）
+TO_ADDRESS = os.environ.get("TO_ADDRESS")             # 送信先メール
 
-# 株情報
-TICKER = "AAPL"
-DROP_THRESHOLD = 2
+STOCK_SYMBOL = "AAPL"      # 監視銘柄
+DROP_PERCENT = 5           # 下落率（%）
 
-# メール情報（Yahooメール用）
-EMAIL_ADDRESS = "outlook_313AA6D1A08AC2BC@outlook.com"
-EMAIL_PASSWORD = "ntoko2940"
-TO_EMAIL = "mtrice.k@gmail.com"
+# -------------------------
+# 株価チェック
+# -------------------------
+def check_stock_drop():
+    ticker = yf.Ticker(STOCK_SYMBOL)
+    hist = ticker.history(period="2d")  # 直近2日分
+    if len(hist) < 2:
+        return False, 0
 
-def send_email(subject, body):
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_ADDRESS
-    msg["To"] = TO_EMAIL
+    high = hist['High'].iloc[-2]
+    close = hist['Close'].iloc[-1]
+    drop = (high - close) / high * 100
 
-    with smtplib.SMTP_SSL("smtp.mail.yahoo.co.jp", 465) as server:
+    if drop >= DROP_PERCENT:
+        return True, drop
+    return False, drop
+
+# -------------------------
+# メール送信
+# -------------------------
+def send_email(drop):
+    subject = f"{STOCK_SYMBOL} has dropped {drop:.2f}%"
+    body = f"{STOCK_SYMBOL} dropped {drop:.2f}% from its recent high."
+
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_ADDRESS
+    msg['To'] = TO_ADDRESS
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP("smtp.office365.com", 587)  # Outlook SMTP
+        server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
+        server.quit()
+        print("Email sent!")
+    except Exception as e:
+        print("Failed to send email:", e)
 
-def check_stock_drop():
-    stock = yf.Ticker(TICKER)
-    hist = stock.history(period="5d")
-    high_price = hist['Close'].max()
-    current_price = hist['Close'][-1]
-    drop_percent = (high_price - current_price) / high_price * 100
-
-    if drop_percent >= DROP_THRESHOLD:
-        send_email(f"{TICKER} 株価下落アラート",
-                   f"{TICKER} が直近高値から {drop_percent:.2f}% 下落しました！")
-    return f"{TICKER}: 現在 {current_price}, 直近高値 {high_price}, 下落率 {drop_percent:.2f}%"
-
-@app.route("/")
-def home():
-    return "Stock alert bot is running!\n" + check_stock_drop()
-
+# -------------------------
+# メイン
+# -------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    alert, drop = check_stock_drop()
+    if alert:
+        send_email(drop)
+    else:
+        print(f"No alert. {STOCK_SYMBOL} dropped {drop:.2f}%")
