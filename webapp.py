@@ -1,65 +1,43 @@
 import yfinance as yf
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import os
+import requests
+import time
 
-# -------------------------
-# 設定（環境変数で管理）
-# -------------------------
-EMAIL_ADDRESS = os.environ.get("EMAIL_ADDRESS")       # 送信元メール
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")     # メールパスワード（環境変数）
-TO_ADDRESS = os.environ.get("TO_ADDRESS")             # 送信先メール
+# ----------------- 設定 -----------------
+TICKER = "AAPL"              # 監視したい銘柄
+DROP_PERCENT = 1.0           # 下落率（％）
+CHECK_INTERVAL = 60          # チェック間隔（秒）
+WEBHOOK_URL = "https://discord.com/api/webhooks/1414617578915233852/s_ZyYQwSdy3fs1xJRewshlvU7Xjor1BT3hmFwmS__ahLxDklUw8YG2Rt44mPUCqrEm7f"
+# ----------------------------------------
 
-STOCK_SYMBOL = "AAPL"      # 監視銘柄
-DROP_PERCENT = 0.01        # 下落率（%）
+def get_price():
+    data = yf.Ticker(TICKER)
+    hist = data.history(period="1d", interval="1m")
+    if hist.empty:
+        return None
+    current_price = hist["Close"][-1]
+    high_price = hist["Close"].max()
+    drop_rate = (high_price - current_price) / high_price * 100
+    return current_price, high_price, drop_rate
 
-# -------------------------
-# 株価チェック
-# -------------------------
-def check_stock_drop():
-    ticker = yf.Ticker(STOCK_SYMBOL)
-    hist = ticker.history(period="2d")  # 直近2日分
-    if len(hist) < 2:
-        return False, 0
-
-    high = hist['High'].iloc[-2]
-    close = hist['Close'].iloc[-1]
-    drop = (high - close) / high * 100
-
-    if drop >= DROP_PERCENT:
-        return True, drop
-    return False, drop
-
-# -------------------------
-# メール送信
-# -------------------------
-def send_email(drop):
-    subject = f"{STOCK_SYMBOL} has dropped {drop:.2f}%"
-    body = f"{STOCK_SYMBOL} dropped {drop:.2f}% from its recent high."
-
-    msg = MIMEMultipart()
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = TO_ADDRESS
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
-
+def send_discord_alert(message):
+    payload = {"content": message}
     try:
-        server = smtplib.SMTP("smtp.office365.com", 587)  # Outlook SMTP
-        server.starttls()
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        print("Email sent!")
+        requests.post(WEBHOOK_URL, json=payload)
     except Exception as e:
-        print("Failed to send email:", e)
+        print("Failed to send alert:", e)
 
-# -------------------------
-# メイン
-# -------------------------
+def main():
+    while True:
+        result = get_price()
+        if result:
+            current, high, drop = result
+            print(f"{TICKER}: 現在 {current}, 直近高値 {high}, 下落率 {drop:.2f}%")
+            if drop >= DROP_PERCENT:
+                send_discord_alert(f"{TICKER} dropped {drop:.2f}%! Current: {current}, High: {high}")
+        else:
+            print("Failed to fetch price.")
+        time.sleep(CHECK_INTERVAL)
+
 if __name__ == "__main__":
-    alert, drop = check_stock_drop()
-    if alert:
-        send_email(drop)
-    else:
-        print(f"No alert. {STOCK_SYMBOL} dropped {drop:.2f}%")
+    print("Stock alert bot is running!")
+    main()
