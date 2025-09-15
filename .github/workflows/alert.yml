@@ -1,0 +1,23 @@
+name: Stock Alert Bot
+
+on:
+  schedule:
+    # 米国東部時間
+    - cron: "45 14 * * 1-5"   # 開場15分後 (14:45 UTC = 9:45 ET)
+    - cron: "30 15 * * 1-5"   # 開場1時間後 (15:30 UTC = 10:30 ET)
+    - cron: "15 21 * * 1-5"   # 終了15分後 (21:15 UTC = 16:15 ET)
+  workflow_dispatch:          # 手動実行も可能
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run bot
+        run: python webapp.py
