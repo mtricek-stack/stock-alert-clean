@@ -12,7 +12,7 @@ SYMBOLS = [
 ]
 
 # 下落通知する割合（%）
-DROP_PERCENT = 20
+DROP_PERCENT = 1
 
 def send_discord_message(message):
     data = {"content": message}
