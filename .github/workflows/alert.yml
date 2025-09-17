@@ -2,11 +2,11 @@ name: Stock Alert Bot
 
 on:
   schedule:
-    # 米国東部時間（ET）で指定
-    - cron: "45 13 * * 1-5"   # 開場15分後 (14:45 UTC = 9:45 ET)
-    - cron: "30 14 * * 1-5"   # 開場1時間後 (15:30 UTC = 10:30 ET)
-    - cron: "15 20 * * 1-5"   # 終了15分後 (21:15 UTC = 16:15 ET)
-  workflow_dispatch:          # 手動実行も可能
+    - cron: "45 13 * * 1-5"   # JST 22:45
+    - cron: "45 14 * * 1-5"   # JST 23:45
+    - cron: "30 15 * * 1-5"   # JST 00:30
+    - cron: "15 21 * * 1-5"   # JST 06:15
+  workflow_dispatch:
 
 jobs:
   run-bot:
@@ -21,5 +21,3 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run bot
         run: python webapp.py
-
-
