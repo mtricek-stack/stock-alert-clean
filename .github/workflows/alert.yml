@@ -4,8 +4,13 @@ on:
   schedule:
     - cron: "45 13 * * 1-5"   # JST 22:45
     - cron: "45 14 * * 1-5"   # JST 23:45
+<<<<<<< HEAD
     - cron: "30 15 * * 1-5"   # JST 24:30 (=翌0:30)
     - cron: "15 21 * * 1-5"   # JST 6:15
+=======
+    - cron: "30 15 * * 1-5"   # JST 00:30
+    - cron: "15 21 * * 1-5"   # JST 06:15
+>>>>>>> bf27c94
   workflow_dispatch:          # 手動実行も可能
 
 jobs:
@@ -21,5 +26,4 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run bot
         run: python webapp.py
-
 
