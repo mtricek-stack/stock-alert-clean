@@ -8,7 +8,8 @@ DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1416784239919235152/_4pH
 SYMBOLS = [
     "NVDA","ISRG","TEM","SOUN","PLTR","IONQ",
     "QBTS","QUBT","RGTI","BBAI","LAES","PDYN",
-    "OPTX","RKLB","CRCL"
+    "OPTX","RKLB","CRCL",
+    "KRMN","NVTS","ENVX","MIAX","BTQ"
 ]
 
 # 下落通知する割合（%）
