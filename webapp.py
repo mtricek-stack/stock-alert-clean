@@ -1,9 +1,10 @@
-import json
 import os
+import json
 import requests
 import yfinance as yf
 
-DISCORD_WEBHOOK_URL = "ここはそのまま"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1416784239919235152/_4pHEPgqs8Jx3DbFEvFkbU_90cbyIQd0E8Elvypk5scV8asMUSYgkPRP4fPeeQ8W5jkb"
+STATE_FILE = "state.json"
 
 SYMBOLS = [
     "NVDA","ISRG","TEM","SOUN","PLTR","IONQ",
@@ -11,70 +12,76 @@ SYMBOLS = [
     "OPTX","RKLB","CRCL","KRMN","NVTS","ENVX","MIAX","BTQ"
 ]
 
-DROP_PERCENT = 10
-STATE_FILE = "state.json"
+DROP_PERCENT = 10  # 下落通知閾値(%)
 
+# state.json をロード（なければ作成）
+if not os.path.exists(STATE_FILE):
+    with open(STATE_FILE, "w") as f:
+        json.dump({}, f)
 
-def load_state():
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "r") as f:
-            return json.load(f)
-    return {}
+with open(STATE_FILE, "r") as f:
+    try:
+        state = json.load(f)
+    except:
+        state = {}
 
-
-def save_state(state):
+def save_state():
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
-
 def send_discord_message(message):
-    requests.post(DISCORD_WEBHOOK_URL, json={"content": message})
-
+    try:
+        requests.post(DISCORD_WEBHOOK_URL, json={"content": message})
+    except Exception as e:
+        print(f"Failed to send Discord message: {e}")
 
 def get_price(symbol):
-    stock = yf.Ticker(symbol)
-    price = stock.fast_info.get("last_price")
-    return price
-
+    try:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(start="2025-10-01")  # 2025/10/1以降のデータ
+        if hist.empty:
+            return None, None
+        recent_high = hist["High"].max()
+        current_price = hist["Close"].iloc[-1]
+        return current_price, recent_high
+    except Exception as e:
+        print(f"Failed to fetch price for {symbol}: {e}")
+        return None, None
 
 def main():
     print("Stock alert bot running!")
-    state = load_state()
-
     for symbol in SYMBOLS:
-        price = get_price(symbol)
-        if price is None:
+        current_price, recent_high = get_price(symbol)
+        if current_price is None:
             print(f"No data for {symbol}")
             continue
 
-        s = state.get(symbol, {
-            "recent_high": price,
-            "in_alert": False
-        })
+        # state.json に初期値設定
+        if symbol not in state:
+            state[symbol] = {"notified": False, "high": recent_high}
 
-        # 高値更新
-        if price > s["recent_high"]:
-            s["recent_high"] = price
-            s["in_alert"] = False
-            state[symbol] = s
-            continue
+        # 過去最高値更新
+        if recent_high > state[symbol]["high"]:
+            state[symbol]["high"] = recent_high
+            state[symbol]["notified"] = False  # 最高値更新で通知リセット
 
-        drop_rate = (s["recent_high"] - price) / s["recent_high"] * 100
+        drop_rate = (state[symbol]["high"] - current_price) / state[symbol]["high"] * 100
 
-        if drop_rate >= DROP_PERCENT:
-            if not s["in_alert"]:
-                send_discord_message(
-                    f"🚨 {symbol} dropped {drop_rate:.2f}% from recent high!\n"
-                    f"Current: {price:.2f}, High: {s['recent_high']:.2f}"
-                )
-                s["in_alert"] = True
+        if drop_rate >= DROP_PERCENT and not state[symbol]["notified"]:
+            send_discord_message(
+                f"🚨 {symbol} dropped {drop_rate:.2f}% from recent high!\n"
+                f"Current: {current_price:.2f}, High: {state[symbol]['high']:.2f}"
+            )
+            state[symbol]["notified"] = True
+        elif drop_rate < DROP_PERCENT and state[symbol]["notified"]:
+            # 回復したら通知フラグリセット
+            state[symbol]["notified"] = False
+            print(f"{symbol}: recovered. Drop {drop_rate:.2f}%")
+
         else:
-            s["in_alert"] = False
+            print(f"{symbol}: No alert. Drop {drop_rate:.2f}%")
 
-        state[symbol] = s
-
-    save_state(state)
-
+    save_state()
 
 if __name__ == "__main__":
     main()

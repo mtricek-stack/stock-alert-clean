@@ -1,5 +1,4 @@
 name: Stock Alert Bot
-# re-enable workflow
 
 on:
   schedule:
