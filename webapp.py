@@ -83,13 +83,13 @@ for symbol in SYMBOLS:
 
     # ---- 通知文（常に同じ意味）----
     message = (
-        f"{symbol}\n"
-        f"Current: {current_price:.2f}\n"
-        f"High (since Oct): {high_price:.2f}\n"
-        f"Low (since Oct): {low_price:.2f}\n"
-        f"Drop: {drop_pct:.2f}%\n"
-        f"Recovery: {recovery_pct:.2f}%"
-    )
+    f"{symbol}\n"
+    f"C {current_price:.2f} | "
+    f"H {high_price:.2f} | "
+    f"L {low_price:.2f} | "
+    f"D {drop_pct:.2f}% | "
+    f"R {recovery_pct:.2f}%"
+)
 
     # ---- 初回だけ 🚨 ----
     if not state[symbol]["alerted"]:

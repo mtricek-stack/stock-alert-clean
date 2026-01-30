@@ -1,1 +1,92 @@
-{}
+{
+  "ISRG": {
+    "high_since_oct": 603.8800048828125,
+    "low_since_oct": 427.8399963378906,
+    "alerted": true
+  },
+  "TEM": {
+    "high_since_oct": 104.31999969482422,
+    "low_since_oct": 58.79999923706055,
+    "alerted": true
+  },
+  "SOUN": {
+    "high_since_oct": 22.170000076293945,
+    "low_since_oct": 8.569999694824219,
+    "alerted": true
+  },
+  "PLTR": {
+    "high_since_oct": 207.52000427246094,
+    "low_since_oct": 147.1199951171875,
+    "alerted": true
+  },
+  "IONQ": {
+    "high_since_oct": 84.63999938964844,
+    "low_since_oct": 38.0,
+    "alerted": true
+  },
+  "QBTS": {
+    "high_since_oct": 46.75,
+    "low_since_oct": 18.545000076293945,
+    "alerted": true
+  },
+  "QUBT": {
+    "high_since_oct": 25.84000015258789,
+    "low_since_oct": 9.5,
+    "alerted": true
+  },
+  "RGTI": {
+    "high_since_oct": 58.150001525878906,
+    "low_since_oct": 18.490100860595703,
+    "alerted": true
+  },
+  "BBAI": {
+    "high_since_oct": 9.390000343322754,
+    "low_since_oct": 5.03000020980835,
+    "alerted": true
+  },
+  "LAES": {
+    "high_since_oct": 8.710000038146973,
+    "low_since_oct": 3.299999952316284,
+    "alerted": true
+  },
+  "PDYN": {
+    "high_since_oct": 10.727999687194824,
+    "low_since_oct": 4.139999866485596,
+    "alerted": true
+  },
+  "OPTX": {
+    "high_since_oct": 7.199999809265137,
+    "low_since_oct": 1.1799999475479126,
+    "alerted": true
+  },
+  "RKLB": {
+    "high_since_oct": 99.58000183105469,
+    "low_since_oct": 37.56999969482422,
+    "alerted": true
+  },
+  "CRCL": {
+    "high_since_oct": 159.47000122070312,
+    "low_since_oct": 64.91999816894531,
+    "alerted": true
+  },
+  "NVTS": {
+    "high_since_oct": 17.790000915527344,
+    "low_since_oct": 6.849999904632568,
+    "alerted": true
+  },
+  "ENVX": {
+    "high_since_oct": 14.210000038146973,
+    "low_since_oct": 6.679999828338623,
+    "alerted": true
+  },
+  "MIAX": {
+    "high_since_oct": 51.375,
+    "low_since_oct": 38.86000061035156,
+    "alerted": true
+  },
+  "BTQ": {
+    "high_since_oct": 16.0,
+    "low_since_oct": 3.569999933242798,
+    "alerted": true
+  }
+}
