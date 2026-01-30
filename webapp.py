@@ -2,7 +2,6 @@ import yfinance as yf
 import json
 import os
 import requests
-from datetime import datetime
 
 # ===== 設定 =====
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1416784239919235152/_4pHEPgqs8Jx3DbFEvFkbU_90cbyIQd0E8Elvypk5scV8asMUSYgkPRP4fPeeQ8W5jkb"
@@ -27,7 +26,7 @@ else:
 
 def save_state():
     with open(STATE_FILE, "w") as f:
-        json.dump(state, f)
+        json.dump(state, f, indent=2)
 
 
 def send_discord(message: str):
@@ -52,28 +51,35 @@ for symbol in SYMBOLS:
 
     drop_pct = (high_price - current_price) / high_price * 100
 
-    # ---- 閾値未満なら何もしない ----
+    # ===== 下落率が閾値未満なら state をリセット =====
     if drop_pct < DROP_THRESHOLD:
+        if symbol in state:
+            del state[symbol]
         print(f"{symbol}: No alert. Drop {drop_pct:.2f}%")
         continue
 
-    # ---- state 初期化 ----
+    # ===== 下落監視開始（初回）=====
     if symbol not in state:
         state[symbol] = {
-            "low_since_drop": current_price,
-            "alerted": False
+            "low_since_drop": current_price
         }
 
-    # ---- 最安値更新 ----
+    # ===== 最安値更新 =====
     if current_price < state[symbol]["low_since_drop"]:
         state[symbol]["low_since_drop"] = current_price
 
     low_price = state[symbol]["low_since_drop"]
-    recovery_pct = (current_price - low_price) / low_price * 100
 
-    # ---- 通知文（常に同じ意味）----
+    # ===== 正しい回復率 =====
+    # (Current - Low) / (High - Low)
+    if high_price > low_price:
+        recovery_pct = (current_price - low_price) / (high_price - low_price) * 100
+    else:
+        recovery_pct = 0.0
+
+    # ===== 通知（毎回必ず送る）=====
     message = (
-        f"{symbol}\n"
+        f"🚨 {symbol}\n"
         f"Current: {current_price:.2f}\n"
         f"High: {high_price:.2f}\n"
         f"Low: {low_price:.2f}\n"
@@ -81,13 +87,9 @@ for symbol in SYMBOLS:
         f"Recovery: {recovery_pct:.2f}%"
     )
 
-    # ---- 初回だけ🚨を付ける ----
-    if not state[symbol]["alerted"]:
-        message = "🚨 " + message
-        state[symbol]["alerted"] = True
-
     send_discord(message)
-
     print(f"{symbol}: Alert sent")
 
+
 save_state()
+
