@@ -2,6 +2,7 @@ import yfinance as yf
 import json
 import os
 import requests
+from datetime import datetime
 
 # ===== 設定 =====
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1416784239919235152/_4pHEPgqs8Jx3DbFEvFkbU_90cbyIQd0E8Elvypk5scV8asMUSYgkPRP4fPeeQ8W5jkb"
@@ -14,6 +15,7 @@ SYMBOLS = [
 
 DROP_THRESHOLD = 10.0  # %
 STATE_FILE = "state.json"
+BASE_DATE = "2025-10-01"  # ← 10月基準
 
 
 # ===== state 読み込み =====
@@ -42,54 +44,59 @@ print("Stock alert bot running!")
 for symbol in SYMBOLS:
     ticker = yf.Ticker(symbol)
 
-    hist = ticker.history(period="6mo")
+    hist = ticker.history(start=BASE_DATE)
     if hist.empty:
         continue
 
     high_price = hist["High"].max()
+    low_price_hist = hist["Low"].min()
     current_price = hist["Close"].iloc[-1]
 
     drop_pct = (high_price - current_price) / high_price * 100
 
-    # ===== 下落率が閾値未満なら state をリセット =====
+    # ---- 閾値未満は何もしない ----
     if drop_pct < DROP_THRESHOLD:
-        if symbol in state:
-            del state[symbol]
         print(f"{symbol}: No alert. Drop {drop_pct:.2f}%")
         continue
 
-    # ===== 下落監視開始（初回）=====
+    # ---- state 初期化（10月以降の最安値・高値を固定）----
     if symbol not in state:
         state[symbol] = {
-            "low_since_drop": current_price
+            "high_since_oct": float(high_price),
+            "low_since_oct": float(low_price_hist),
+            "alerted": False
         }
 
-    # ===== 最安値更新 =====
-    if current_price < state[symbol]["low_since_drop"]:
-        state[symbol]["low_since_drop"] = current_price
+    # ---- 念のため更新（10月内で高値・安値が伸びた場合）----
+    state[symbol]["high_since_oct"] = max(
+        state[symbol]["high_since_oct"], high_price
+    )
+    state[symbol]["low_since_oct"] = min(
+        state[symbol]["low_since_oct"], low_price_hist
+    )
 
-    low_price = state[symbol]["low_since_drop"]
+    high_price = state[symbol]["high_since_oct"]
+    low_price = state[symbol]["low_since_oct"]
 
-    # ===== 正しい回復率 =====
-    # (Current - Low) / (High - Low)
-    if high_price > low_price:
-        recovery_pct = (current_price - low_price) / (high_price - low_price) * 100
-    else:
-        recovery_pct = 0.0
+    drop_pct = (high_price - current_price) / high_price * 100
+    recovery_pct = (current_price - low_price) / low_price * 100
 
-    # ===== 通知（毎回必ず送る）=====
+    # ---- 通知文（常に同じ意味）----
     message = (
-        f"🚨 {symbol}\n"
+        f"{symbol}\n"
         f"Current: {current_price:.2f}\n"
-        f"High: {high_price:.2f}\n"
-        f"Low: {low_price:.2f}\n"
+        f"High (since Oct): {high_price:.2f}\n"
+        f"Low (since Oct): {low_price:.2f}\n"
         f"Drop: {drop_pct:.2f}%\n"
         f"Recovery: {recovery_pct:.2f}%"
     )
 
+    # ---- 初回だけ 🚨 ----
+    if not state[symbol]["alerted"]:
+        message = "🚨 " + message
+        state[symbol]["alerted"] = True
+
     send_discord(message)
     print(f"{symbol}: Alert sent")
 
-
 save_state()
-
